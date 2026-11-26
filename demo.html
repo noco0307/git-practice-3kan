@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>キオンフク デモ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: 朝の支度中にサッと見られる、やさしく明快な天気アプリ
+IDEA: 天気予報の「時間帯の帯」と、着せ替え人形を組み合わせた画面
+PICTURE: スマホ画面そのもの。朝・昼・夜で服が着替わるイラストが主役
+COLOUR and TYPE: 朝の空色 #2f6fd6 を主に、昼の陽ざし #ffb627、夜の藍 #23305e。Zen Maru Gothic
+LAYOUT: 左にスマホ、右に「課題→機能」の説明。600px未満は縦積み
+*/
+:root{color-scheme:light dark;--bg:light-dark(#e9f1fb,#0c1430);--ink:light-dark(#14213d,#e8eefb);--sub:light-dark(#55627d,#a7b3cf);--card:light-dark(#ffffff,#17224a);--line:light-dark(#d7e1ef,#2a376a);--sky:#2f6fd6;--sun:#ffb627;--night:#23305e;--hot:#e8573b}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;overflow-x:clip}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start}
+h1{font-size:clamp(30px,4vw,44px);line-height:1.1;margin:0 0 10px;text-wrap:balance;font-weight:900}
+h2{font-size:20px;margin:0 0 8px}
+.lead{color:var(--sub);margin:0 0 20px;max-width:34em}
+/* phone */
+.phone{width:360px;max-width:100%;border-radius:40px;background:#0d1226;padding:12px;box-shadow:0 30px 60px -20px rgba(20,40,90,.45);position:relative}
+.screen{border-radius:30px;overflow:hidden;height:720px;background:var(--card);position:relative;display:flex;flex-direction:column}
+.status{display:flex;justify-content:space-between;font-size:13px;padding:10px 22px 4px;font-weight:700}
+.scrollY{overflow-y:auto;flex:1;padding:0 16px 20px;scrollbar-width:thin}
+.hero{border-radius:22px;padding:16px;color:#fff;background:linear-gradient(160deg,#2f6fd6,#5aa3f0);margin-top:6px}
+.hero .city{font-size:14px;opacity:.9;display:flex;justify-content:space-between;gap:8px}
+.mm{display:flex;gap:18px;align-items:flex-end;margin:6px 0 2px}
+.mm b{font-size:44px;line-height:1;font-weight:900;white-space:nowrap}
+.mm span{font-size:13px;display:block;opacity:.9}
+.gap{font-size:14px;background:rgba(255,255,255,.2);border-radius:999px;padding:3px 10px;display:inline-block;margin-top:6px}
+.chart{width:100%;height:auto;display:block;margin-top:8px}
+select,button{font:inherit;color:inherit}
+.daysel{background:rgba(255,255,255,.2);border:0;border-radius:10px;padding:4px 8px;color:#fff;font-size:13px;min-height:32px}
+.daysel option{color:#14213d}
+.sec{margin-top:18px}
+.sec h3{font-size:15px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}
+.sec h3 small{font-weight:500;color:var(--sub);font-size:13px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:light-dark(#eef3fa,#0f1838);padding:5px;border-radius:14px}
+.tabs button{border:0;background:none;border-radius:10px;min-height:44px;font-weight:700;cursor:pointer;line-height:1.2}
+.tabs button small{display:block;font-weight:500;font-size:13px;color:var(--sub)}
+.tabs button[aria-pressed=true]{background:var(--card);box-shadow:0 2px 6px rgba(20,40,90,.12)}
+.outfit{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;align-items:center;margin-top:10px;border:1px solid var(--line);border-radius:18px;padding:10px}
+.outfit svg{width:130px;height:180px;display:block}
+.fig-bg{border-radius:14px}
+.band-name{font-size:13px;font-weight:700;border-radius:999px;padding:2px 10px;display:inline-block;color:#fff}
+.items{list-style:none;padding:0;margin:8px 0 0;font-size:14px}
+.items li{padding:4px 0;border-bottom:1px dashed var(--line)}
+.items li:last-child{border:0}
+.items i{font-style:normal;color:var(--sub);font-size:13px;margin-right:6px}
+.adj{border-radius:16px;padding:12px 14px;background:light-dark(#fff6df,#2b2a1d);margin-top:10px;font-size:14px}
+.dots{display:inline-flex;gap:4px;vertical-align:middle;margin-left:6px}
+.dots span{width:10px;height:10px;border-radius:50%;background:light-dark(#e6d6a8,#55502f)}
+.dots span.on{background:var(--sun)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button,.chip{border:1px solid var(--line);background:var(--card);border-radius:12px;min-height:44px;font-size:14px;cursor:pointer;padding:4px 6px}
+.seg button[aria-pressed=true],.chip[aria-pressed=true]{background:var(--sky);color:#fff;border-color:var(--sky)}
+.pref{border:1px solid var(--line);border-radius:16px;padding:12px}
+.pref label{font-size:14px;font-weight:700;display:block}
+.range{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub)}
+input[type=range]{flex:1;accent-color:var(--sky);min-height:44px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{min-height:36px;padding:4px 12px}
+.likes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.lk{border:1px solid var(--line);border-radius:14px;padding:6px;text-align:center;font-size:13px}
+.lk svg{width:100%;height:110px;display:block}
+.lk button{border:0;background:none;cursor:pointer;min-height:36px;font-size:14px;font-weight:700;color:var(--sub);display:inline-flex;align-items:center;gap:4px}
+.lk button[aria-pressed=true]{color:var(--hot)}
+.col{border-radius:16px;background:light-dark(#eef3fa,#0f1838);padding:12px 14px;font-size:14px}
+.col p{margin:4px 0}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+/* notification */
+.notif{position:absolute;left:10px;right:10px;top:34px;z-index:5;background:light-dark(rgba(255,255,255,.96),rgba(30,40,80,.97));border-radius:18px;padding:10px 12px;box-shadow:0 12px 30px rgba(10,20,60,.3);display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;font-size:13px;cursor:pointer;transform:translateY(-140%);transition:transform .45s cubic-bezier(.2,.9,.3,1.2);border:0;text-align:left;color:var(--ink)}
+.notif.show{transform:none}
+.notif .ic{width:36px;height:36px;border-radius:10px;background:linear-gradient(160deg,#2f6fd6,#ffb627)}
+.notif b{display:block;font-size:14px}
+/* right side */
+.side .step{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+.side .num{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900}
+.side p{margin:2px 0 0;color:var(--sub);font-size:15px}
+.side .prob{font-size:13px;font-weight:700;color:var(--sky)}
+.btn{border:0;background:var(--night);color:#fff;border-radius:12px;padding:10px 16px;min-height:44px;cursor:pointer;font-weight:700}
+:root[data-theme=dark] .btn{background:var(--sky)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .btn{background:var(--sky)}}
+.note{font-size:13px;color:var(--sub);margin-top:14px}
+@media(max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}.phone{margin:0 auto}}
+@media(max-width:400px){.phone{padding:6px;border-radius:30px}.screen{border-radius:24px}.outfit{grid-template-columns:104px minmax(0,1fr)}.outfit svg{width:104px;height:150px}}
+@media(prefers-reduced-motion:reduce){.notif{transition:none}}
+</style>
+</head>
+<body>
+<div class="band">
+<div class="wrap">
+  <div class="phone" aria-label="アプリ画面のデモ">
+    <div class="screen">
+      <button class="notif" id="notif" aria-label="通知を開く">
+        <span class="ic"></span>
+        <span><b id="nTitle">キオンフク・7:00</b><span id="nBody"></span></span>
+      </button>
+      <div class="status"><span>7:00</span><span>札幌</span></div>
+      <div class="scrollY" id="app">
+        <div class="hero">
+          <div class="city"><span>札幌市</span>
+            <select class="daysel" id="day" aria-label="サンプルの日を選ぶ"></select></div>
+          <div class="mm">
+            <div><span>最高</span><b id="max"></b></div>
+            <div><span>最低</span><b id="min"></b></div>
+          </div>
+          <span class="gap" id="gap"></span>
+          <svg class="chart" id="chart" viewBox="0 0 300 92" aria-label="朝・昼・夜の気温"></svg>
+        </div>
+
+        <div class="sec">
+          <h3>時間帯ごとの服装 <small id="feelNote"></small></h3>
+          <div class="tabs" id="tabs"></div>
+          <div class="outfit" id="outfit"></div>
+          <div class="adj" id="adj"></div>
+        </div>
+
+        <div class="sec">
+          <h3>どの気温に合わせる？</h3>
+          <div class="seg" id="basis"></div>
+          <div class="outfit" id="dayOutfit"></div>
+        </div>
+
+        <div class="sec">
+          <h3>あなたの感覚</h3>
+          <div class="pref">
+            <label for="feel">寒がり ←→ 暑がり</label>
+            <div class="range"><span>寒がり</span><input type="range" id="feel" min="-3" max="3" step="1" value="0"><span>暑がり</span></div>
+            <div class="chips" id="style"></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <h3>地域のおすすめ <small>いいね順</small></h3>
+          <div class="likes" id="likes"></div>
+        </div>
+
+        <div class="sec">
+          <h3>きょうのコラム</h3>
+          <div class="col">
+            <p><b>数字より「風」をチェック</b></p>
+            <p>同じ気温でも、風が1m/s強まるごとに体感はおよそ1℃下がると言われます。予報で風が強い日は、ひとつ寒い段階の服を選ぶのが安心です。</p>
+            <p style="color:var(--sub);font-size:13px">本番では気象庁の情報をもとにしたコラムを掲載する想定です。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="side">
+    <h1>寒暖差に負けない服選びアプリ<br>デモ版</h1>
+    <p class="lead">アンケートで9割が困っていた「天気に合った服選び」。天気予報を見ない人にも届くよう、通知から服装まで一直線でつなぐ設計です。左の画面は実際に触れます。</p>
+    <button class="btn" id="replay">朝7:00の通知をもう一度見る</button>
+
+    <div style="margin-top:22px">
+      <div class="step"><span class="num" style="background:var(--sky)">1</span>
+        <div><span class="prob">課題：温度＝この服、とすぐ思いつかない</span>
+        <h2>朝・昼・夜の気温に合わせた服を絵で提示</h2>
+        <p>タブを切り替えると服が着替わります。昼に何を脱げばいいかを「調整レベル」で知らせます。写真撮影は不要です。</p></div></div>
+      <div class="step"><span class="num" style="background:var(--sun);color:#14213d">2</span>
+        <div><span class="prob">課題：朝、1日の天気の全体を見ていない</span>
+        <h2>最低気温・最高気温と寒暖差を最初に表示</h2>
+        <p>「最低気温に合わせる／バランス／最高気温に合わせる」から選べるので、好みの塩梅で1日の服を決められます。寒がり・暑がりの調整も反映されます。</p></div></div>
+      <div class="step"><span class="num" style="background:var(--night)">3</span>
+        <div><span class="prob">課題：天気で迷う人ほど予報を見ない</span>
+        <h2>プッシュ通知で確実に届ける</h2>
+        <p>家を出る前に、寒暖差と服装のひとことを通知。タップするとそのままアプリが開きます。</p></div></div>
+    </div>
+    <p class="note">気温・コーデ・いいね数はすべて動作確認用のサンプルです。</p>
+  </div>
+</div>
+</div>
+
+<script>
+{
+const DAYS=[
+ {name:'11月下旬の日',t:[1,8,3],min:0,max:9},
+ {name:'10月の秋晴れ',t:[6,17,10],min:5,max:18},
+ {name:'6月の初夏',t:[14,25,18],min:13,max:26},
+ {name:'真冬の日',t:[-6,-1,-4],min:-7,max:0}
+];
+const TIMES=['朝','昼','夜'];
+const TIMEHINT=['7〜9時','12〜15時','18〜21時'];
+// 気温帯（体感）ごとの服装 [カジュアル, きれいめ]
+const BANDS=[
+ {min:27,name:'真夏',c:'#e8573b',top:['半袖Tシャツ','半袖ブラウス'],outer:null,bottom:['ハーフパンツ','薄手ワイドパンツ'],acc:['帽子'],sleeve:'short',len:0},
+ {min:23,name:'夏日',c:'#f08a3c',top:['半袖Tシャツ','半袖シャツ'],outer:null,bottom:['デニム','スラックス'],acc:[],sleeve:'short',len:0},
+ {min:19,name:'過ごしやすい',c:'#e3a826',top:['長袖Tシャツ','長袖シャツ'],outer:null,bottom:['デニム','スラックス'],acc:[],sleeve:'long',len:0},
+ {min:15,name:'少し肌寒い',c:'#58b368',top:['長袖Tシャツ','ブラウス'],outer:['薄手カーディガン','薄手ジャケット'],bottom:['デニム','スラックス'],acc:[],sleeve:'long',len:1},
+ {min:11,name:'肌寒い',c:'#3aa6a0',top:['スウェット','薄手ニット'],outer:['パーカー・ブルゾン','トレンチコート'],bottom:['デニム','スラックス'],acc:[],sleeve:'long',len:2},
+ {min:6,name:'寒い',c:'#3b82d6',top:['ニット','ニット'],outer:['中綿ジャケット','ウールコート'],bottom:['厚手パンツ','ウールパンツ'],acc:['マフラー'],sleeve:'long',len:3},
+ {min:1,name:'かなり寒い',c:'#4a5fd0',top:['厚手ニット','厚手ニット'],outer:['ダウンジャケット','ダウンコート'],bottom:['裏起毛パンツ','裏起毛パンツ'],acc:['マフラー','手袋'],sleeve:'long',len:3},
+ {min:-99,name:'真冬',c:'#23305e',top:['インナー＋厚手ニット','インナー＋厚手ニット'],outer:['ロングダウン','ロングダウン'],bottom:['裏起毛パンツ','裏起毛パンツ'],acc:['マフラー','手袋','ニット帽'],sleeve:'long',len:4}
+];
+const COL={top:['#f4f1ea','#cfe0f5'],outer:['#7a8c5a','#b5895a'],bottom:['#3d5a8a','#55505e']};
+const LIKES=[
+ {who:'20代・カジュアル',t:7,n:124,s:0},
+ {who:'20代・きれいめ',t:9,n:98,s:1},
+ {who:'30代・カジュアル',t:3,n:76,s:0}
+];
+const S={day:0,time:0,basis:1,feel:0,style:0,liked:{}};
+
+const bandOf=t=>BANDS.findIndex(b=>t>=b.min);
+const feelT=t=>t+S.feel;
+const deg=t=>(t>0?'':'')+t+'℃';
+
+function figure(bi,st,small){
+ const b=BANDS[bi],top=COL.top[st],out=COL.outer[st],bot=COL.bottom[st];
+ const skin='#f2c9a5',hair='#4a3428',shorts=st===0&&b.min>=27;
+ const outLen=[0,140,150,172,192][b.len];
+ const acc=b.acc;
+ let g='';
+ // legs
+ if(shorts){g+=`<rect x="63" y="132" width="15" height="26" rx="5" fill="${bot}"/><rect x="82" y="132" width="15" height="26" rx="5" fill="${bot}"/><rect x="65" y="156" width="11" height="44" rx="5" fill="${skin}"/><rect x="84" y="156" width="11" height="44" rx="5" fill="${skin}"/>`}
+ else g+=`<rect x="63" y="132" width="15" height="70" rx="6" fill="${bot}"/><rect x="82" y="132" width="15" height="70" rx="6" fill="${bot}"/>`;
+ g+=`<rect x="58" y="198" width="21" height="9" rx="4" fill="#2b2b33"/><rect x="81" y="198" width="21" height="9" rx="4" fill="#2b2b33"/>`;
+ // arms (skin)
+ g+=`<rect x="41" y="74" width="13" height="58" rx="6" fill="${skin}"/><rect x="106" y="74" width="13" height="58" rx="6" fill="${skin}"/>`;
+ // sleeves of top
+ const sl=b.sleeve==='short'?24:54;
+ g+=`<rect x="41" y="72" width="13" height="${sl}" rx="6" fill="${top}" stroke="rgba(0,0,0,.12)"/><rect x="106" y="72" width="13" height="${sl}" rx="6" fill="${top}" stroke="rgba(0,0,0,.12)"/>`;
+ // torso
+ g+=`<rect x="54" y="68" width="52" height="68" rx="12" fill="${top}" stroke="rgba(0,0,0,.12)"/>`;
+ // outer
+ if(b.outer){
+  g+=`<rect x="39" y="70" width="16" height="58" rx="7" fill="${out}"/><rect x="105" y="70" width="16" height="58" rx="7" fill="${out}"/>`;
+  g+=`<path d="M52 68 h22 v${outLen-68} h-24 q-2 0 -2 -4 v${-(outLen-80)} q0-8 4-8z" fill="${out}"/><path d="M108 68 h-22 v${outLen-68} h24 q2 0 2 -4 v${-(outLen-80)} q0-8 -4-8z" fill="${out}"/>`;
+  g+=`<path d="M52 68 h22 v${outLen-68}" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2"/>`;
+ }
+ // hands / gloves
+ const hand=acc.includes('手袋')?'#c2413a':skin;
+ g+=`<circle cx="47.5" cy="133" r="7" fill="${hand}"/><circle cx="112.5" cy="133" r="7" fill="${hand}"/>`;
+ // neck & head
+ g+=`<rect x="74" y="56" width="12" height="14" fill="${skin}"/><circle cx="80" cy="42" r="18" fill="${skin}"/>`;
+ g+=`<path d="M61 44 q-1 -24 19 -24 q20 0 19 24 q-4 -12 -19 -13 q-15 1 -19 13z" fill="${hair}"/><path d="M61 42 q-3 22 3 34 l6 -2 q-5-14 -3-30z M99 42 q3 22 -3 34 l-6 -2 q5-14 3-30z" fill="${hair}"/>`;
+ g+=`<circle cx="73.5" cy="44" r="2" fill="#2b2b33"/><circle cx="86.5" cy="44" r="2" fill="#2b2b33"/><path d="M75 51 q5 4 10 0" stroke="#b5654a" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+ if(acc.includes('マフラー'))g+=`<rect x="62" y="58" width="36" height="12" rx="6" fill="#d9534f"/><rect x="86" y="64" width="10" height="28" rx="4" fill="#d9534f"/>`;
+ if(acc.includes('ニット帽'))g+=`<path d="M61 36 q0-22 19-22 q19 0 19 22z" fill="#e3a826"/><rect x="59" y="32" width="42" height="8" rx="4" fill="#c98f12"/><circle cx="80" cy="13" r="5" fill="#e3a826"/>`;
+ if(acc.includes('帽子'))g+=`<ellipse cx="80" cy="30" rx="30" ry="6" fill="#e9d9a8"/><path d="M64 30 q0-16 16-16 q16 0 16 16z" fill="#e9d9a8"/>`;
+ return `<svg viewBox="0 0 160 212" aria-hidden="true"><rect class="fig-bg" x="4" y="4" width="152" height="204" rx="16" fill="${b.c}" opacity=".14"/>${g}</svg>`;
+}
+
+function itemsHTML(bi,st){
+ const b=BANDS[bi];
+ return `<ul class="items"><li><i>トップス</i>${b.top[st]}</li>${b.outer?`<li><i>アウター</i>${b.outer[st]}</li>`:''}<li><i>ボトムス</i>${b.bottom[st]}</li>${b.acc.length?`<li><i>小物</i>${b.acc.join('・')}</li>`:''}</ul>`;
+}
+
+function renderChart(d){
+ const s=document.getElementById('chart');
+ const lo=Math.min(...d.t)-3,hi=Math.max(...d.t)+3;
+ const xs=[50,150,250],y=t=>78-(t-lo)/(hi-lo)*52;
+ const pts=d.t.map((t,i)=>[xs[i],y(t)]);
+ const path='M'+pts.map(p=>p.join(' ')).join(' L');
+ s.innerHTML=`<path d="${path}" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>`+
+  pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===S.time?7:5}" fill="${i===S.time?'#ffb627':'#fff'}"/><text x="${p[0]}" y="${p[1]-12}" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">${d.t[i]}℃</text><text x="${p[0]}" y="90" text-anchor="middle" fill="#fff" font-size="12" opacity=".9">${TIMES[i]}</text>`).join('');
+}
+
+function adjText(d){
+ const bs=d.t.map(t=>bandOf(feelT(t)));
+ const cur=BANDS[bs[S.time]];
+ const lv=Math.min(3,Math.max(...bs)-Math.min(...bs));
+ const dots=[1,2,3].map(i=>`<span class="${i<=lv?'on':''}"></span>`).join('');
+ let msg;
+ const mo=BANDS[bs[0]],no=BANDS[bs[1]],ni=BANDS[bs[2]];
+ if(lv===0)msg='1日中ほぼ同じ服装でOK。脱ぎ着の心配はありません。';
+ else if(mo.outer&&!no.outer)msg=`昼は<b>${mo.outer[S.style]}</b>を脱いでOK。手に持てる薄手のものを選ぶと楽です。`;
+ else if(mo.outer&&no.outer&&mo.outer[S.style]!==no.outer[S.style])msg=`朝は<b>${mo.outer[S.style]}</b>が必要ですが、昼は<b>${no.outer[S.style]}</b>くらいの暖かさ。前を開けて調整しましょう。`;
+ else msg=`昼は「${no.name}」まで上がります。中に薄手を着て、暑ければ1枚脱げるように。`;
+ if(bandOf(feelT(d.t[2]))>bs[1]+0&&ni.outer&&!no.outer)msg+=` 夜はまた<b>${ni.outer[S.style]}</b>が必要です。`;
+ return `<b>調整レベル</b><span class="dots">${dots}</span> ${['なし','少し','脱ぎ着あり','大きい'][lv]}<br>${msg}`;
+}
+
+function render(){
+ const d=DAYS[S.day];
+ document.getElementById('max').textContent=deg(d.max);
+ document.getElementById('min').textContent=deg(d.min);
+ document.getElementById('gap').textContent=`寒暖差 ${d.max-d.min}℃`;
+ renderChart(d);
+ document.getElementById('feelNote').textContent=S.feel?`体感 ${S.feel>0?'+':''}${S.feel}℃で計算`:'';
+ document.getElementById('tabs').innerHTML=TIMES.map((n,i)=>`<button aria-pressed="${i===S.time}" data-t="${i}">${n} ${d.t[i]}℃<small>${TIMEHINT[i]}</small></button>`).join('');
+ const bi=bandOf(feelT(d.t[S.time])),b=BANDS[bi];
+ document.getElementById('outfit').innerHTML=figure(bi,S.style)+`<div><span class="band-name" style="background:${b.c}">${b.name}</span>${itemsHTML(bi,S.style)}</div>`;
+ document.getElementById('adj').innerHTML=adjText(d);
+ const B=[['最低気温','低め'],['バランス','真ん中'],['最高気温','高め']];
+ document.getElementById('basis').innerHTML=B.map((x,i)=>`<button aria-pressed="${i===S.basis}" data-b="${i}">${x[0]}</button>`).join('');
+ const bt=Math.round(d.min+(d.max-d.min)*[0,.5,1][S.basis]);
+ const dbi=bandOf(feelT(bt)),db=BANDS[dbi];
+ document.getElementById('dayOutfit').innerHTML=figure(dbi,S.style)+`<div><span class="band-name" style="background:${db.c}">${bt}℃基準・${db.name}</span>${itemsHTML(dbi,S.style)}</div>`;
+ document.getElementById('style').innerHTML=['カジュアル','きれいめ'].map((x,i)=>`<button class="chip" aria-pressed="${i===S.style}" data-s="${i}">${x}</button>`).join('');
+ const ls=LIKES.map((l,i)=>({...l,i,n:l.n+(S.liked[i]?1:0)})).sort((a,b)=>b.n-a.n);
+ document.getElementById('likes').innerHTML=ls.map(l=>`<div class="lk">${figure(bandOf(l.t),l.s)}<div>${l.t}℃の日</div><div style="color:var(--sub)">${l.who}</div><button aria-pressed="${!!S.liked[l.i]}" data-l="${l.i}" aria-label="いいね">${S.liked[l.i]?'♥':'♡'} ${l.n}</button></div>`).join('');
+ // notification text
+ const nb=BANDS[bandOf(feelT(d.t[0]))],nn=BANDS[bandOf(feelT(d.t[1]))];
+ document.getElementById('nBody').textContent=`今日は寒暖差${d.max-d.min}℃。朝は${nb.outer?nb.outer[S.style]:nb.top[S.style]}、昼は${nn.outer?nn.outer[S.style]+'で':'上着なしで'}OK。タップして服装をチェック`;
+}
+
+const sel=document.getElementById('day');
+sel.innerHTML=DAYS.map((d,i)=>`<option value="${i}">${d.name}（サンプル）</option>`).join('');
+sel.addEventListener('change',e=>{S.day=+e.target.value;render();});
+document.getElementById('app').addEventListener('click',e=>{
+ const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.t)S.time=+t.dataset.t;
+ else if(t.dataset.b)S.basis=+t.dataset.b;
+ else if(t.dataset.s)S.style=+t.dataset.s;
+ else if(t.dataset.l){S.liked[t.dataset.l]=!S.liked[t.dataset.l];}
+ render();
+});
+document.getElementById('feel').addEventListener('input',e=>{S.feel=+e.target.value;render();});
+const notif=document.getElementById('notif');
+let tm;
+function showNotif(){notif.classList.add('show');clearTimeout(tm);tm=setTimeout(()=>notif.classList.remove('show'),6000);}
+notif.addEventListener('click',()=>{notif.classList.remove('show');S.time=0;render();document.getElementById('app').scrollTo({top:0,behavior:'smooth'});});
+document.getElementById('replay').addEventListener('click',showNotif);
+render();
+setTimeout(showNotif,700);
+}
+</script>
+</body>
+</html>
